@@ -1,0 +1,23 @@
+# MusicKYK 🎹
+
+Quiz d'intervalles musicaux avec piano interactif.
+
+> « Quelle est la **tierce mineure** de **Do** ? » → tu choisis la note (boutons ou touches du piano),
+> et le piano colorie la note de départ (or), la bonne réponse (vert) et ton choix s'il est faux (rouge).
+> Les demi‑tons entre les deux sont marqués d'un point, et l'intervalle est joué (mélodique puis harmonique).
+
+## Intervalles
+Seconde min/maj · Tierce min/maj · Quarte dim/juste/aug · Quinte dim/juste/aug · Sixte min/maj · Septième min/maj
+
+Les 12 notes chromatiques servent de note de départ. L'orthographe exacte est donnée
+(ex. quarte augmentée de Do = **Fa♯**, quinte diminuée de Do = **Sol♭**).
+
+## Réglages
+- Choisir les intervalles et les notes de départ à travailler
+- Son on/off, question suivante automatique
+- Scores (bonnes réponses, précision, série) sauvegardés dans le navigateur
+
+## Lancer
+Aucune installation : ouvrir `index.html` dans un navigateur.
+
+Pour la mettre en ligne : GitHub → *Settings* → *Pages* → *Deploy from a branch* → `main` / `(root)`.

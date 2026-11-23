@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0d0b" />
+  <title>MusicKYK — Intervalles</title>
+  <meta name="description" content="Quiz d'intervalles musicaux avec piano interactif." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28"><rect x="3" y="5" width="26" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 5v13M16 5v22M21 5v13" stroke="currentColor" stroke-width="2"/><rect x="9.5" y="5" width="3" height="11" rx="1" fill="currentColor"/><rect x="19.5" y="5" width="3" height="11" rx="1" fill="currentColor"/></svg>
+      </span>
+      <div>
+        <h1>Music<em>KYK</em></h1>
+        <p class="tag">Entraînement aux intervalles</p>
+      </div>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><span id="stat-score">0</span><small>bonnes</small></div>
+      <div class="stat"><span id="stat-acc">–</span><small>précision</small></div>
+      <div class="stat streak"><span id="stat-streak">0</span><small>série</small></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="question card">
+      <p class="eyebrow" id="q-eyebrow">Question 1</p>
+      <h2 id="question">Quelle est la <span class="hl-int">tierce mineure</span> de <span class="hl-root">Do</span> ?</h2>
+      <p class="feedback" id="feedback" role="status">Choisis une note ci‑dessous ou directement sur le piano.</p>
+      <div class="q-actions">
+        <button class="ghost" id="btn-listen" type="button" title="Écouter la note de départ">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 010 7M18.5 6a8 8 0 010 12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+          Écouter
+        </button>
+        <button class="primary" id="btn-next" type="button" disabled>Suivante <kbd>⏎</kbd></button>
+      </div>
+    </section>
+
+    <section class="piano-wrap card" aria-label="Piano">
+      <div class="legend">
+        <span><i class="dot root"></i>Note de départ</span>
+        <span><i class="dot target"></i>Bonne réponse</span>
+        <span><i class="dot wrong"></i>Ton choix (faux)</span>
+      </div>
+      <div class="piano" id="piano"></div>
+      <p class="semis" id="semis"></p>
+    </section>
+
+    <section class="answers card" aria-label="Réponses">
+      <div class="answer-grid" id="answers"></div>
+    </section>
+
+    <details class="settings card">
+      <summary>
+        <span>Réglages</span>
+        <small id="settings-summary"></small>
+      </summary>
+      <div class="settings-body">
+        <h3>Intervalles à travailler</h3>
+        <div class="chips" id="chips-intervals"></div>
+        <div class="row">
+          <button class="link" type="button" data-preset="all">Tout</button>
+          <button class="link" type="button" data-preset="asked">Seulement maj/min/aug/dim</button>
+          <button class="link" type="button" data-preset="none">Aucun</button>
+        </div>
+
+        <h3>Notes de départ</h3>
+        <div class="chips" id="chips-roots"></div>
+        <div class="row">
+          <button class="link" type="button" data-roots="all">Les 12</button>
+          <button class="link" type="button" data-roots="white">Touches blanches</button>
+        </div>
+
+        <h3>Options</h3>
+        <label class="switch"><input type="checkbox" id="opt-sound" checked /><span></span>Son</label>
+        <label class="switch"><input type="checkbox" id="opt-auto" /><span></span>Question suivante automatique après une bonne réponse</label>
+        <div class="row">
+          <button class="link danger" type="button" id="btn-reset">Remettre les scores à zéro</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="cheat card">
+      <summary><span>Aide‑mémoire</span><small>nombre de demi‑tons</small></summary>
+      <div class="cheat-grid" id="cheat"></div>
+    </details>
+  </main>
+
+  <footer>MusicKYK · fait avec ♪</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
