@@ -95,6 +95,10 @@ main { display: grid; gap: 14px; padding-bottom: 40px; }
 .modes button[aria-pressed="true"] { background: var(--gold); color: #1d160b; }
 .modes button[aria-pressed="true"] small { opacity: .7; }
 
+.dirs { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: -4px; }
+.dirs > span { color: var(--faint); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-right: 4px; }
+.hl-dir { font-style: italic; color: var(--gold); opacity: .8; }
+
 /* ---------- Question ---------- */
 .question { text-align: center; padding: 30px 22px 22px; }
 .eyebrow { margin: 0 0 10px; color: var(--faint); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }

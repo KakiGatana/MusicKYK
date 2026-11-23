@@ -12,6 +12,9 @@ Quiz d'intervalles musicaux avec piano interactif.
 - **À l'oreille** — deux notes sont jouées, tu devines l'intervalle (les intervalles qui sonnent
   pareil, comme quarte augmentée / quinte diminuée, sont regroupés).
 
+Chaque mode marche en **montant**, en **descendant** ou **les deux** (réglage « Sens »).
+Ex. : tierce mineure descendante de Do = **La** ; quinte augmentée descendante de Si = **Mi♭**.
+
 ## Intervalles
 Seconde min/maj · Tierce min/maj · Quarte dim/juste/aug · Quinte dim/juste/aug · Sixte min/maj · Septième min/maj
 

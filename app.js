@@ -42,9 +42,10 @@
 
   const spell = (l, a) => LETTERS[l] + ACC[a];
 
-  function spellInterval(root, iv) {
-    const letter = (root.l + iv.num - 1) % 7;
-    const pc = (root.pc + iv.semis) % 12;
+  // dir = 1 (montant) ou -1 (descendant)
+  function spellInterval(root, iv, dir = 1) {
+    const letter = ((root.l + dir * (iv.num - 1)) % 7 + 7) % 7;
+    const pc = ((root.pc + dir * iv.semis) % 12 + 12) % 12;
     let acc = pc - NATURAL_PC[letter];
     acc = ((acc + 6) % 12 + 12) % 12 - 6; // ramène dans [-6, 5]
     return { pc, name: spell(letter, acc) };
@@ -70,13 +71,14 @@
   const IV_IDS = INTERVALS.map(i => i.id);
   function loadSettings() {
     const raw = store.get("settings", {});
-    const s = { intervals: IV_IDS.slice(), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note" };
+    const s = { intervals: IV_IDS.slice(), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note", dir: "up" };
     if (!raw || typeof raw !== "object") return s;
     if (Array.isArray(raw.intervals)) s.intervals = IV_IDS.filter(id => raw.intervals.includes(id));
     if (Array.isArray(raw.roots)) s.roots = ROOTS.map(r => r.pc).filter(pc => raw.roots.includes(pc));
     if (typeof raw.sound === "boolean") s.sound = raw.sound;
     if (typeof raw.auto === "boolean") s.auto = raw.auto;
     if (["note", "name", "ear"].includes(raw.mode)) s.mode = raw.mode;
+    if (["up", "down", "both"].includes(raw.dir)) s.dir = raw.dir;
     return s;
   }
   function loadStats() {
@@ -257,6 +259,13 @@
     els.answers.hidden = settings.mode !== "note";
     els.answersIv.hidden = settings.mode === "note";
   }
+  const dirBtns = document.querySelectorAll("[data-dir]");
+  function renderDirs() { dirBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.dir === settings.dir))); }
+  dirBtns.forEach(b => b.addEventListener("click", () => {
+    if (settings.dir === b.dataset.dir) return;
+    settings.dir = b.dataset.dir; saveSettings(); renderDirs();
+    newQuestion();
+  }));
   modeBtns.forEach(b => b.addEventListener("click", () => {
     if (settings.mode === b.dataset.mode) return;
     settings.mode = b.dataset.mode; saveSettings(); renderModes();
@@ -332,9 +341,12 @@
       iv = ivs[Math.floor(Math.random() * ivs.length)];
     } while (current && tries++ < 20 && (ivs.length * roots.length > 1) && current.root === root && current.iv === iv);
 
-    const target = spellInterval(root, iv);
-    current = { root, iv, target, rootName: spell(root.l, root.a), rootMidi: LOW + root.pc };
-    current.targetMidi = current.rootMidi + iv.semis;
+    const dir = settings.dir === "down" ? -1 : settings.dir === "both" ? (Math.random() < 0.5 ? 1 : -1) : 1;
+    const target = spellInterval(root, iv, dir);
+    // montant : départ dans l'octave du bas ; descendant : départ dans l'octave du haut
+    current = { root, iv, dir, target, rootName: spell(root.l, root.a), rootMidi: LOW + root.pc + (dir < 0 ? 12 : 0) };
+    current.targetMidi = current.rootMidi + dir * iv.semis;
+    current.ivName = iv.name + (dir < 0 ? " descendante" : "");
     answered = false;
     qNum++;
 
@@ -347,12 +359,12 @@
 
     const { rootName } = current;
     if (settings.mode === "note") {
-      els.question.innerHTML = `Quelle est la <span class="hl-int">${iv.name}</span> ${deOf(rootName)}<span class="hl-root">${rootName}</span> ?`;
+      els.question.innerHTML = `Quelle est la <span class="hl-int">${current.ivName}</span> ${deOf(rootName)}<span class="hl-root">${rootName}</span> ?`;
       ansEls.forEach(b => { b.disabled = false; b.classList.remove("correct", "incorrect"); });
       mark(current.rootMidi, "root", rootName);
       playNote(current.rootMidi, 0.02, 1.2);
     } else if (settings.mode === "name") {
-      els.question.innerHTML = `Quel intervalle entre <span class="hl-root">${rootName}</span> et <span class="hl-target">${target.name}</span> ?`;
+      els.question.innerHTML = `Quel intervalle ${dir < 0 ? '<span class="hl-dir">descendant</span> ' : ""}entre <span class="hl-root">${rootName}</span> et <span class="hl-target">${target.name}</span> ?`;
       buildIntervalButtons(ivs);
       mark(current.rootMidi, "root", rootName);
       mark(current.targetMidi, "target", target.name);
@@ -389,11 +401,11 @@
   }
 
   function revealPiano() {
-    const { rootMidi, targetMidi, rootName, target, iv } = current;
-    for (let m = rootMidi + 1; m < targetMidi; m++) mark(m, "between");
+    const { rootMidi, targetMidi, rootName, target, iv, dir } = current;
+    for (let m = Math.min(rootMidi, targetMidi) + 1; m < Math.max(rootMidi, targetMidi); m++) mark(m, "between");
     mark(rootMidi, "root", rootName);
     mark(targetMidi, "target", target.name);
-    els.semis.innerHTML = `${rootName} → ${target.name} : <b>${iv.semis} demi‑ton${iv.semis > 1 ? "s" : ""}</b> · ${tonesText(iv.semis)}`;
+    els.semis.innerHTML = `${rootName} ${dir < 0 ? "↘" : "↗"} ${target.name} : <b>${iv.semis} demi‑ton${iv.semis > 1 ? "s" : ""} ${dir < 0 ? "en descendant" : "en montant"}</b> · ${tonesText(iv.semis)}`;
   }
 
   function finish(ok, html) {
@@ -417,12 +429,15 @@
     revealPiano();
     if (!ok) {
       let wm = clickedMidi;
-      if (wm == null) { wm = rootMidi + ((pc - root.pc + 12) % 12); if (wm === rootMidi) wm += 12; }
+      if (wm == null) {
+        const d = current.dir > 0 ? (pc - root.pc + 12) % 12 : (root.pc - pc + 12) % 12;
+        wm = rootMidi + current.dir * (d || 12);
+      }
       if (wm !== rootMidi && wm !== targetMidi) mark(wm, "wrong", PC_LABEL[pc][0]);
     }
 
     const sameKey = PC_LABEL[target.pc].includes(target.name) ? "" : ` <span class="muted">(même touche que ${PC_LABEL[target.pc].join(" / ")})</span>`;
-    const sentence = `La ${iv.name} ${deOf(rootName)}${rootName}, c’est <strong>${target.name}</strong>${sameKey}.`;
+    const sentence = `La ${current.ivName} ${deOf(rootName)}${rootName}, c’est <strong>${target.name}</strong>${sameKey}.`;
     finish(ok, ok ? `Bravo ! ${sentence}` : `Raté — tu as choisi ${PC_LABEL[pc].join(" / ")}. ${sentence}`);
     playInterval(current);
   }
@@ -439,7 +454,7 @@
     if (!ok) btn.classList.add("incorrect");
     revealPiano();
     const { iv, rootName, target } = current;
-    let sentence = `${rootName} → ${target.name}, c’est une <strong>${iv.name}</strong>.`;
+    let sentence = `${rootName} ${current.dir < 0 ? "↘" : "↗"} ${target.name}, c’est une <strong>${current.ivName}</strong>.`;
     if (settings.mode === "ear") {
       const twins = INTERVALS.filter(i => i.semis === iv.semis && i !== iv);
       if (twins.length) sentence += ` <span class="muted">(même son qu’une ${twins.map(t => t.name).join(" / ")})</span>`;
@@ -491,6 +506,7 @@
   renderChips();
   saveSettings();
   renderModes();
+  renderDirs();
   renderStats();
   newQuestion();
 
