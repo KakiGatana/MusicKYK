@@ -48,10 +48,67 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 
 /* En-tête */
 .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding-top: 28px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: clamp(12px, 2vw, 20px); }
+.logo { width: clamp(58px, 9vw, 84px); height: auto; flex: none; overflow: visible; cursor: default; }
+.lg-bg { fill: var(--wood); transform-origin: 32px 32px; }
+.lg-staff path { stroke: #f5ecdd; stroke-width: 2; stroke-linecap: round; opacity: .55; stroke-dasharray: 44; stroke-dashoffset: 0; }
+.lg-slur { fill: none; stroke: #f5ecdd; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 26; stroke-dashoffset: 0; }
+.lg-note .hole { fill: var(--wood); }
+.lg-a ellipse:first-child { fill: #3f8a66; }
+.lg-b ellipse:first-child { fill: var(--yellow); }
+.lg-note { transform-box: fill-box; transform-origin: 50% 50%; transition: transform .35s cubic-bezier(.3, 1.6, .5, 1); }
+.brand:hover .lg-a { transform: translateY(-2px) rotate(-6deg); }
+.brand:hover .lg-b { transform: translateY(-3px) rotate(6deg); transition-delay: .06s; }
+
 .wordmark {
   margin: 0; font-size: clamp(42px, 8vw, 80px); line-height: .9; font-weight: 800; font-stretch: 75%;
-  letter-spacing: -.02em; color: var(--wood-2);
+  letter-spacing: -.02em; color: var(--wood-2); display: flex;
 }
+.wordmark span { display: inline-block; }
+.tagline { margin: 8px 0 0; font-size: 14px; color: var(--ink-2); font-weight: 500; }
+
+/* Animation d'entrée */
+@keyframes in-pop { from { transform: scale(.4) rotate(-8deg); opacity: 0; } 70% { transform: scale(1.06) rotate(1deg); opacity: 1; } }
+@keyframes in-draw { from { stroke-dashoffset: 44; } }
+@keyframes in-slur { from { stroke-dashoffset: 26; } }
+@keyframes in-drop { from { transform: translateY(-26px); opacity: 0; } 60% { transform: translateY(2px); opacity: 1; } 80% { transform: translateY(-1px); } }
+@keyframes in-letter { from { transform: translateY(.45em) rotate(4deg); opacity: 0; } }
+@keyframes in-rise { from { transform: translateY(14px); opacity: 0; } }
+@keyframes in-fade { from { opacity: 0; } }
+@keyframes in-line { from { transform: scaleX(0); } }
+
+.lg-bg { animation: in-pop .55s cubic-bezier(.2, .9, .3, 1) both; }
+.lg-staff path { animation: in-draw .5s ease-out both; }
+.lg-staff path:nth-child(1) { animation-delay: .25s; }
+.lg-staff path:nth-child(2) { animation-delay: .31s; }
+.lg-staff path:nth-child(3) { animation-delay: .37s; }
+.lg-staff path:nth-child(4) { animation-delay: .43s; }
+.lg-staff path:nth-child(5) { animation-delay: .49s; }
+.lg-a { animation: in-drop .55s ease-out .75s both; }
+.lg-b { animation: in-drop .55s ease-out .95s both; }
+.lg-slur { animation: in-slur .45s ease-in-out 1.2s both; }
+.wordmark span { animation: in-letter .5s cubic-bezier(.2, .8, .3, 1) both; }
+.wordmark span:nth-child(1) { animation-delay: .30s; }
+.wordmark span:nth-child(2) { animation-delay: .36s; }
+.wordmark span:nth-child(3) { animation-delay: .42s; }
+.wordmark span:nth-child(4) { animation-delay: .48s; }
+.wordmark span:nth-child(5) { animation-delay: .54s; }
+.wordmark span:nth-child(6) { animation-delay: .60s; }
+.wordmark span:nth-child(7) { animation-delay: .66s; }
+.tagline { animation: in-fade .6s ease .85s both; }
+.stats { animation: in-fade .6s ease .9s both; }
+.staff i { transform-origin: left center; animation: in-line .7s cubic-bezier(.4, 0, .2, 1) both; }
+.staff i:nth-child(1) { animation-delay: .85s; }
+.staff i:nth-child(2) { animation-delay: .9s; }
+.staff i:nth-child(3) { animation-delay: .95s; }
+.staff i:nth-child(4) { animation-delay: 1s; }
+.staff i:nth-child(5) { animation-delay: 1.05s; }
+.modes { animation: in-rise .5s ease 1.05s both; }
+.dirs { animation: in-rise .5s ease 1.12s both; }
+.question { animation: in-rise .55s ease 1.2s both; }
+.board { animation: in-rise .55s ease 1.3s both; }
+.answers { animation: in-rise .55s ease 1.4s both; }
+.fold { animation: in-fade .5s ease 1.5s both; }
 .stats { display: flex; margin: 0; }
 .stats > div { padding: 0 0 2px 18px; margin-left: 18px; border-left: var(--hair); min-width: 64px; }
 .stats > div:first-child { border-left: 0; margin-left: 0; padding-left: 0; }

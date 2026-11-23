@@ -4,11 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f5ecdd" />
-  <title>MusicKYK</title>
+  <title>Solfège</title>
   <meta name="description" content="Intervalles : quiz et piano." />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <meta name="referrer" content="no-referrer" />
   <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,7 +21,21 @@
 
   <div class="page">
     <header class="top">
-      <h1 class="wordmark">MusicKYK</h1>
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <rect class="lg-bg" width="64" height="64" rx="15" />
+          <g class="lg-staff">
+            <path d="M10 18h44" /><path d="M10 25h44" /><path d="M10 32h44" /><path d="M10 39h44" /><path d="M10 46h44" />
+          </g>
+          <path class="lg-slur" d="M25 33.5C28 22 36 19.5 40.5 20.5" />
+          <g class="lg-note lg-a"><g transform="rotate(-22 22 39)"><ellipse cx="22" cy="39" rx="7" ry="5" /><ellipse class="hole" cx="22" cy="39" rx="2.6" ry="3.4" transform="rotate(50 22 39)" /></g></g>
+          <g class="lg-note lg-b"><g transform="rotate(-22 44 25)"><ellipse cx="44" cy="25" rx="7" ry="5" /><ellipse class="hole" cx="44" cy="25" rx="2.6" ry="3.4" transform="rotate(50 44 25)" /></g></g>
+        </svg>
+        <div>
+          <h1 class="wordmark" aria-label="Solfège"><span>S</span><span>o</span><span>l</span><span>f</span><span>è</span><span>g</span><span>e</span></h1>
+          <p class="tagline">Les intervalles, au clavier et à l’oreille</p>
+        </div>
+      </div>
       <dl class="stats" aria-live="polite">
         <div><dt>Justes</dt><dd id="stat-score">0</dd></div>
         <div><dt>Réussite</dt><dd id="stat-acc">–</dd></div>

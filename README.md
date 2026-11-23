@@ -1,6 +1,6 @@
-# MusicKYK
+# Solfège
 
-Quiz d'intervalles avec un clavier de deux octaves.
+Quiz d'intervalles avec un clavier de deux octaves, au clavier et à l'oreille.
 
 Trois modes :
 
