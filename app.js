@@ -73,21 +73,37 @@
   const IV_IDS = INTERVALS.map(i => i.id);
   function loadSettings() {
     const raw = store.get("settings", {});
-    const s = { intervals: IV_IDS.slice(), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note", dir: "up" };
+    const s = { intervals: IV_IDS.slice(), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note", dir: "up", focus: false };
     if (!raw || typeof raw !== "object") return s;
     if (Array.isArray(raw.intervals)) s.intervals = IV_IDS.filter(id => raw.intervals.includes(id));
     if (Array.isArray(raw.roots)) s.roots = ROOTS.map(r => r.pc).filter(pc => raw.roots.includes(pc));
     if (typeof raw.sound === "boolean") s.sound = raw.sound;
     if (typeof raw.auto === "boolean") s.auto = raw.auto;
+    if (typeof raw.focus === "boolean") s.focus = raw.focus;
     if (["note", "name", "ear"].includes(raw.mode)) s.mode = raw.mode;
     if (["up", "down", "both"].includes(raw.dir)) s.dir = raw.dir;
     return s;
   }
+  const RECENT = 20;
   function loadStats() {
     const raw = store.get("stats", {});
     const n = v => (Number.isSafeInteger(v) && v >= 0 ? v : 0);
-    const s = { score: n(raw && raw.score), total: n(raw && raw.total), streak: n(raw && raw.streak), best: n(raw && raw.best) };
+    const s = { score: n(raw && raw.score), total: n(raw && raw.total), streak: n(raw && raw.streak), best: n(raw && raw.best), byMode: {} };
     if (s.score > s.total) s.score = s.total;
+    // détail par mode et par intervalle : { n, ok, last: [1,0,1…] (20 dernières réponses) }
+    const bm = raw && raw.byMode;
+    ["note", "name", "ear"].forEach(m => {
+      s.byMode[m] = {};
+      const src = bm && typeof bm === "object" ? bm[m] : null;
+      if (!src || typeof src !== "object") return;
+      IV_IDS.forEach(id => {
+        const e = src[id];
+        if (!e || typeof e !== "object") return;
+        const last = Array.isArray(e.last) ? e.last.filter(x => x === 0 || x === 1).slice(-RECENT) : [];
+        const tot = n(e.n), ok = Math.min(n(e.ok), tot);
+        if (tot) s.byMode[m][id] = { n: tot, ok, last };
+      });
+    });
     return s;
   }
   const settings = loadSettings();
@@ -136,7 +152,7 @@
     question: $("#question"), eyebrow: $("#q-eyebrow"), feedback: $("#feedback"),
     next: $("#btn-next"), listen: $("#btn-listen"), piano: $("#piano"), semis: $("#semis"),
     answers: $("#answers"), answersIv: $("#answers-iv"), listenLabel: $("#listen-label"), chipsIv: $("#chips-intervals"), chipsRoots: $("#chips-roots"),
-    summary: $("#settings-summary"), cheat: $("#cheat"), sound: $("#opt-sound"), auto: $("#opt-auto"),
+    summary: $("#settings-summary"), weakList: $("#weak-list"), weakSummary: $("#weak-summary"), weakMode: $("#weak-mode"), focus: $("#opt-focus"), cheat: $("#cheat"), sound: $("#opt-sound"), auto: $("#opt-auto"),
     score: $("#stat-score"), acc: $("#stat-acc"), streak: $("#stat-streak"),
   };
 
@@ -241,9 +257,11 @@
   els.auto.checked = settings.auto;
   els.sound.addEventListener("change", () => { settings.sound = els.sound.checked; saveSettings(); });
   els.auto.addEventListener("change", () => { settings.auto = els.auto.checked; saveSettings(); });
+  els.focus.checked = settings.focus;
+  els.focus.addEventListener("change", () => { settings.focus = els.focus.checked; saveSettings(); });
   $("#btn-reset").addEventListener("click", () => {
-    Object.assign(stats, { score: 0, total: 0, streak: 0, best: 0 });
-    store.set("stats", stats); renderStats();
+    Object.assign(stats, { score: 0, total: 0, streak: 0, best: 0, byMode: { note: {}, name: {}, ear: {} } });
+    store.set("stats", stats); renderStats(); renderWeak();
   });
 
   /* ------------------------------------------------------------------ *
@@ -271,7 +289,7 @@
   }));
   modeBtns.forEach(b => b.addEventListener("click", () => {
     if (settings.mode === b.dataset.mode) return;
-    settings.mode = b.dataset.mode; saveSettings(); renderModes();
+    settings.mode = b.dataset.mode; saveSettings(); renderModes(); renderWeak();
     current = null; qNum = 0; newQuestion();
   }));
 
@@ -341,7 +359,7 @@
     let root, iv, tries = 0;
     do {
       root = roots[Math.floor(Math.random() * roots.length)];
-      iv = ivs[Math.floor(Math.random() * ivs.length)];
+      iv = settings.focus ? pickWeighted(ivs) : ivs[Math.floor(Math.random() * ivs.length)];
     } while (current && tries++ < 20 && (ivs.length * roots.length > 1) && current.root === root && current.iv === iv);
 
     const dir = settings.dir === "down" ? -1 : settings.dir === "both" ? (Math.random() < 0.5 ? 1 : -1) : 1;
@@ -400,8 +418,13 @@
     stats.total++;
     if (ok) { stats.score++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); }
     else stats.streak = 0;
+    const tab = stats.byMode[settings.mode];
+    const e = tab[current.iv.id] || (tab[current.iv.id] = { n: 0, ok: 0, last: [] });
+    e.n++; if (ok) e.ok++;
+    e.last.push(ok ? 1 : 0); if (e.last.length > RECENT) e.last.shift();
     store.set("stats", stats);
     renderStats(ok);
+    renderWeak();
   }
 
   function revealPiano() {
@@ -467,6 +490,53 @@
     playInterval(current);
   }
 
+  /* ---------- Points faibles ---------- */
+  // taux de réussite récent (20 dernières réponses) ; null si jamais joué
+  function rateOf(id) {
+    const e = stats.byMode[settings.mode][id];
+    if (!e || !e.last.length) return null;
+    return e.last.reduce((a, b) => a + b, 0) / e.last.length;
+  }
+  // plus un intervalle est raté, plus il revient souvent ; jamais joué = un peu favorisé
+  function pickWeighted(ivs) {
+    const w = ivs.map(iv => { const r = rateOf(iv.id); return r === null ? 2 : 1 + 8 * (1 - r); });
+    let x = Math.random() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < ivs.length; i++) { x -= w[i]; if (x <= 0) return ivs[i]; }
+    return ivs[ivs.length - 1];
+  }
+  const MODE_NAMES = { note: "Trouver la note", name: "Nommer l’intervalle", ear: "À l’oreille" };
+  function renderWeak() {
+    const rows = INTERVALS.map(iv => {
+      const e = stats.byMode[settings.mode][iv.id];
+      return { iv, e, r: rateOf(iv.id) };
+    });
+    const played = rows.filter(x => x.r !== null).sort((a, b) => a.r - b.r || b.e.n - a.e.n);
+    const unplayed = rows.filter(x => x.r === null);
+    const weak = played.filter(x => x.r < 0.7 && x.e.last.length >= 3);
+    els.weakSummary.textContent = played.length
+      ? (weak.length ? `${weak.length} à revoir` : "rien à signaler")
+      : "pas encore de données";
+    els.weakMode.textContent = MODE_NAMES[settings.mode];
+    if (!played.length) {
+      els.weakList.innerHTML = `<p class="weak-empty">Réponds à quelques questions dans ce mode : les intervalles les plus ratés s’afficheront ici, du pire au meilleur.</p>`;
+      return;
+    }
+    els.weakList.innerHTML = played.map(({ iv, e, r }) => {
+      const pct = Math.round(r * 100);
+      const lvl = e.last.length < 3 ? "few" : r < 0.5 ? "bad" : r < 0.7 ? "mid" : r < 0.9 ? "ok" : "top";
+      const dots = e.last.slice(-10).map(x => `<i class="${x ? "y" : "n"}"></i>`).join("");
+      return `<li class="${lvl}"><span class="wn">${cap(iv.name)}</span>`
+        + `<span class="wbar"><b data-w="${pct}"></b></span>`
+        + `<span class="wp">${pct}%</span>`
+        + `<span class="wd" title="10 dernières réponses">${dots}</span>`
+        + `<span class="wc">${e.ok}/${e.n}</span></li>`;
+    }).join("") + (unplayed.length
+      ? `<li class="none"><span class="wn">Pas encore joués</span><span class="wrest">${unplayed.map(x => x.iv.short).join(", ")}</span></li>`
+      : "");
+    // largeur posée via le DOM : la CSP interdit les attributs style dans le HTML
+    els.weakList.querySelectorAll("[data-w]").forEach(b => { b.style.width = b.dataset.w + "%"; });
+  }
+
   function renderStats(ok) {
     els.score.textContent = stats.score;
     els.acc.textContent = stats.total ? Math.round(100 * stats.score / stats.total) + "%" : "–";
@@ -509,6 +579,7 @@
   renderModes();
   renderDirs();
   renderStats();
+  renderWeak();
   newQuestion();
 
   /* ------------------------------------------------------------------ *

@@ -187,6 +187,34 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 .cheat td { padding: 7px 0; border-bottom: var(--hair); }
 .cheat td:last-child { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
 
+/* Points faibles */
+.weak-head { margin: 0 0 12px; font-size: 14px; color: var(--ink-2); }
+.weak-head b { color: var(--ink); }
+.weak-empty { margin: 0 0 12px; color: var(--ink-2); font-size: 15px; max-width: 52ch; }
+.weak-list { list-style: none; margin: 0 0 14px; padding: 0; max-width: 720px; }
+.weak-list li {
+  display: grid; grid-template-columns: 180px 1fr 48px 86px 48px; gap: 12px; align-items: center;
+  padding: 8px 0; border-bottom: var(--hair); font-size: 15px;
+}
+.wn { font-weight: 700; }
+.wbar { height: 8px; border-radius: 4px; background: var(--paper-2); overflow: hidden; }
+.wbar b { display: block; height: 100%; border-radius: 4px; background: var(--blue); }
+.wp { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.wc { text-align: right; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+.wd { display: flex; gap: 3px; }
+.wd i { width: 7px; height: 7px; border-radius: 50%; }
+.wd i.y { background: var(--blue); }
+.wd i.n { background: var(--red); }
+.weak-list li.bad .wbar b { background: var(--red); }
+.weak-list li.bad .wn, .weak-list li.bad .wp { color: var(--red); }
+.weak-list li.mid .wbar b { background: var(--yellow); }
+.weak-list li.mid .wp { color: #b9741a; }
+.weak-list li.few .wbar b { background: var(--ink-3); }
+.weak-list li.few .wp { color: var(--ink-3); }
+.weak-list li.none { grid-template-columns: 180px 1fr; color: var(--ink-3); }
+.weak-list li.none .wn { font-weight: 600; }
+.wrest { font-size: 13px; }
+
 /* Mise à jour */
 .update-bar {
   position: fixed; z-index: 50; left: 0; right: 0; bottom: 0;
@@ -219,6 +247,10 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
   .iv-grid { grid-template-columns: repeat(2, 1fr); }
   .iv-grid .ans { font-size: 16px; min-height: 58px; }
   .legend { display: none; }
+  .weak-list li { grid-template-columns: 1fr 40px 48px; row-gap: 4px; column-gap: 8px; }
+  .weak-list li .wbar { grid-column: 1 / -1; grid-row: 2; }
+  .weak-list li .wd { display: none; }
+  .weak-list li.none { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
