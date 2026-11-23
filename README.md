@@ -6,6 +6,12 @@ Quiz d'intervalles musicaux avec piano interactif.
 > et le piano colorie la note de départ (or), la bonne réponse (vert) et ton choix s'il est faux (rouge).
 > Les demi‑tons entre les deux sont marqués d'un point, et l'intervalle est joué (mélodique puis harmonique).
 
+## 3 modes
+- **Trouver la note** — « Quelle est la tierce mineure de Do ? » → tu choisis la note.
+- **Nommer l'intervalle** — « Quel intervalle entre Do et Mi♭ ? » → tu choisis l'intervalle.
+- **À l'oreille** — deux notes sont jouées, tu devines l'intervalle (les intervalles qui sonnent
+  pareil, comme quarte augmentée / quinte diminuée, sont regroupés).
+
 ## Intervalles
 Seconde min/maj · Tierce min/maj · Quarte dim/juste/aug · Quinte dim/juste/aug · Sixte min/maj · Septième min/maj
 

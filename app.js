@@ -66,7 +66,7 @@
   };
 
   const settings = Object.assign(
-    { intervals: INTERVALS.map(i => i.id), roots: ROOTS.map(r => r.pc), sound: true, auto: false },
+    { intervals: INTERVALS.map(i => i.id), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note" },
     store.get("settings", {})
   );
   const stats = Object.assign({ score: 0, total: 0, streak: 0, best: 0 }, store.get("stats", {}));
@@ -111,7 +111,7 @@
   const els = {
     question: $("#question"), eyebrow: $("#q-eyebrow"), feedback: $("#feedback"),
     next: $("#btn-next"), listen: $("#btn-listen"), piano: $("#piano"), semis: $("#semis"),
-    answers: $("#answers"), chipsIv: $("#chips-intervals"), chipsRoots: $("#chips-roots"),
+    answers: $("#answers"), answersIv: $("#answers-iv"), listenLabel: $("#listen-label"), chipsIv: $("#chips-intervals"), chipsRoots: $("#chips-roots"),
     summary: $("#settings-summary"), cheat: $("#cheat"), sound: $("#opt-sound"), auto: $("#opt-auto"),
     score: $("#stat-score"), acc: $("#stat-acc"), streak: $("#stat-streak"),
   };
@@ -222,12 +222,76 @@
   });
 
   /* ------------------------------------------------------------------ *
+   *  Modes
+   * ------------------------------------------------------------------ */
+  const MODES = {
+    note: { listen: "Écouter", hint: "Choisis une note ci‑dessous ou directement sur le piano." },
+    name: { listen: "Écouter", hint: "Quel intervalle sépare ces deux notes ?" },
+    ear:  { listen: "Réécouter", hint: "Écoute les deux notes, puis choisis l’intervalle." },
+  };
+  if (!MODES[settings.mode]) settings.mode = "note";
+  const modeBtns = document.querySelectorAll("[data-mode]");
+  function renderModes() {
+    modeBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === settings.mode)));
+    els.listenLabel.textContent = MODES[settings.mode].listen;
+    els.answers.hidden = settings.mode !== "note";
+    els.answersIv.hidden = settings.mode === "note";
+  }
+  modeBtns.forEach(b => b.addEventListener("click", () => {
+    if (settings.mode === b.dataset.mode) return;
+    settings.mode = b.dataset.mode; saveSettings(); renderModes();
+    current = null; qNum = 0; newQuestion();
+  }));
+
+  /* ------------------------------------------------------------------ *
    *  Quiz
    * ------------------------------------------------------------------ */
   let current = null;
   let answered = false;
   let qNum = 0;
   let autoTimer = null;
+  let ivBtns = [];
+
+  const deOf = name => /^[AEIOUYÉ]/i.test(name) ? "d’" : "de ";
+
+  function playInterval(c, delay = 0.05) {
+    playNote(c.rootMidi, delay, 1.1); setTimeout(() => pulse(c.rootMidi), delay * 1000);
+    playNote(c.targetMidi, delay + 0.55, 1.1); setTimeout(() => pulse(c.targetMidi), (delay + 0.55) * 1000);
+    playNote(c.rootMidi, delay + 1.2, 1.8, 0.24); playNote(c.targetMidi, delay + 1.2, 1.8, 0.24);
+  }
+  // en mode oreille on ne trahit pas la réponse en faisant bouger les touches
+  function playIntervalSilently(c, delay = 0.05) {
+    playNote(c.rootMidi, delay, 1.1);
+    playNote(c.targetMidi, delay + 0.55, 1.1);
+    playNote(c.rootMidi, delay + 1.2, 1.8, 0.24); playNote(c.targetMidi, delay + 1.2, 1.8, 0.24);
+  }
+
+  function buildIntervalButtons(ivs) {
+    els.answersIv.innerHTML = "";
+    let options;
+    if (settings.mode === "ear") {
+      // à l'oreille, les intervalles enharmoniques sonnent pareil : on les regroupe
+      const bySemis = new Map();
+      ivs.forEach(iv => { if (!bySemis.has(iv.semis)) bySemis.set(iv.semis, []); bySemis.get(iv.semis).push(iv); });
+      options = [...bySemis.entries()].sort((a, b) => a[0] - b[0]).map(([semis, list]) => ({
+        semis,
+        label: list.length > 1 ? list.map(i => cap(i.short)).join(" / ") : cap(list[0].name),
+        sub: list.length > 1 ? "même son" : "",
+        test: iv => iv.semis === semis,
+      }));
+    } else {
+      options = ivs.map(iv => ({ id: iv.id, label: cap(iv.name), sub: "", test: x => x.id === iv.id }));
+    }
+    ivBtns = options.map(o => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ans";
+      b.innerHTML = o.label + (o.sub ? `<small>${o.sub}</small>` : "");
+      b.addEventListener("click", () => answerInterval(o, b));
+      b._opt = o;
+      els.answersIv.appendChild(b);
+      return b;
+    });
+  }
 
   function newQuestion() {
     clearTimeout(autoTimer);
@@ -237,6 +301,7 @@
       els.question.innerHTML = "Choisis au moins un intervalle et une note dans les réglages ↓";
       els.feedback.textContent = ""; els.feedback.className = "feedback";
       ansEls.forEach(b => b.disabled = true);
+      els.answersIv.innerHTML = "";
       els.next.disabled = false;
       current = null; clearPiano();
       return;
@@ -254,17 +319,29 @@
     qNum++;
 
     els.eyebrow.textContent = `Question ${qNum}`;
-    const de = /^[AEIOUYÉ]/i.test(current.rootName) ? "d’" : "de ";
-    els.question.innerHTML = `Quelle est la <span class="hl-int">${iv.name}</span> ${de}<span class="hl-root">${current.rootName}</span> ?`;
     els.feedback.className = "feedback";
-    els.feedback.textContent = "Choisis une note ci‑dessous ou directement sur le piano.";
+    els.feedback.textContent = MODES[settings.mode].hint;
     els.semis.innerHTML = "";
     els.next.disabled = true;
-    ansEls.forEach(b => { b.disabled = false; b.classList.remove("correct", "incorrect"); });
-
     clearPiano();
-    mark(current.rootMidi, "root", current.rootName);
-    playNote(current.rootMidi, 0.02, 1.2);
+
+    const { rootName } = current;
+    if (settings.mode === "note") {
+      els.question.innerHTML = `Quelle est la <span class="hl-int">${iv.name}</span> ${deOf(rootName)}<span class="hl-root">${rootName}</span> ?`;
+      ansEls.forEach(b => { b.disabled = false; b.classList.remove("correct", "incorrect"); });
+      mark(current.rootMidi, "root", rootName);
+      playNote(current.rootMidi, 0.02, 1.2);
+    } else if (settings.mode === "name") {
+      els.question.innerHTML = `Quel intervalle entre <span class="hl-root">${rootName}</span> et <span class="hl-target">${target.name}</span> ?`;
+      buildIntervalButtons(ivs);
+      mark(current.rootMidi, "root", rootName);
+      mark(current.targetMidi, "target", target.name);
+      playInterval(current);
+    } else {
+      els.question.innerHTML = `Écoute bien… <span class="hl-int">quel est cet intervalle</span> ?`;
+      buildIntervalButtons(ivs);
+      playIntervalSilently(current, 0.1);
+    }
   }
 
   function clearPiano() {
@@ -281,48 +358,74 @@
     k.classList.remove("pulse"); void k.offsetWidth; k.classList.add("pulse");
   }
 
-  function answer(pc, clickedMidi) {
-    if (!current || answered) return;
+  function score(ok) {
     answered = true;
     clearTimeout(autoTimer);
-    const ok = pc === current.target.pc;
-    const { root, iv, target, rootName, rootMidi, targetMidi } = current;
-
     stats.total++;
     if (ok) { stats.score++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); }
     else stats.streak = 0;
     store.set("stats", stats);
     renderStats(ok);
+  }
 
-    // Boutons
+  function revealPiano() {
+    const { rootMidi, targetMidi, rootName, target, iv } = current;
+    for (let m = rootMidi + 1; m < targetMidi; m++) mark(m, "between");
+    mark(rootMidi, "root", rootName);
+    mark(targetMidi, "target", target.name);
+    els.semis.innerHTML = `${rootName} → ${target.name} : <b>${iv.semis} demi‑ton${iv.semis > 1 ? "s" : ""}</b> · ${tonesText(iv.semis)}`;
+  }
+
+  function finish(ok, html) {
+    els.feedback.className = "feedback " + (ok ? "ok" : "ko");
+    els.feedback.innerHTML = html;
+    els.next.disabled = false;
+    if (ok && settings.auto) autoTimer = setTimeout(newQuestion, 2800);
+  }
+
+  // Mode « trouver la note »
+  function answer(pc, clickedMidi) {
+    if (!current || answered || settings.mode !== "note") return;
+    const ok = pc === current.target.pc;
+    const { root, iv, target, rootName, rootMidi, targetMidi } = current;
+    score(ok);
+
     ansEls.forEach(b => b.disabled = true);
     ansEls[target.pc].classList.add("correct");
     if (!ok) ansEls[pc].classList.add("incorrect");
 
-    // Piano
-    for (let m = rootMidi + 1; m < targetMidi; m++) mark(m, "between");
-    mark(targetMidi, "target", target.name);
+    revealPiano();
     if (!ok) {
       let wm = clickedMidi;
       if (wm == null) { wm = rootMidi + ((pc - root.pc + 12) % 12); if (wm === rootMidi) wm += 12; }
       if (wm !== rootMidi && wm !== targetMidi) mark(wm, "wrong", PC_LABEL[pc][0]);
     }
 
-    // Texte
-    const de = /^[AEIOUYÉ]/i.test(rootName) ? "d’" : "de ";
     const sameKey = PC_LABEL[target.pc].includes(target.name) ? "" : ` <span class="muted">(même touche que ${PC_LABEL[target.pc].join(" / ")})</span>`;
-    const sentence = `La ${iv.name} ${de}${rootName}, c’est <strong>${target.name}</strong>${sameKey}.`;
-    els.feedback.className = "feedback " + (ok ? "ok" : "ko");
-    els.feedback.innerHTML = ok ? `Bravo ! ${sentence}` : `Raté — tu as choisi ${PC_LABEL[pc].join(" / ")}. ${sentence}`;
-    els.semis.innerHTML = `${rootName} → ${target.name} : <b>${iv.semis} demi‑ton${iv.semis > 1 ? "s" : ""}</b> · ${tonesText(iv.semis)}`;
-    els.next.disabled = false;
+    const sentence = `La ${iv.name} ${deOf(rootName)}${rootName}, c’est <strong>${target.name}</strong>${sameKey}.`;
+    finish(ok, ok ? `Bravo ! ${sentence}` : `Raté — tu as choisi ${PC_LABEL[pc].join(" / ")}. ${sentence}`);
+    playInterval(current);
+  }
 
-    // Son : mélodique puis harmonique
-    playNote(rootMidi, 0.05, 1.1); setTimeout(() => pulse(rootMidi), 50);
-    playNote(targetMidi, 0.6, 1.1); setTimeout(() => pulse(targetMidi), 600);
-    playNote(rootMidi, 1.25, 1.8, 0.24); playNote(targetMidi, 1.25, 1.8, 0.24);
-
-    if (ok && settings.auto) autoTimer = setTimeout(newQuestion, 2600);
+  // Modes « nommer l'intervalle » et « à l'oreille »
+  function answerInterval(opt, btn) {
+    if (!current || answered) return;
+    const ok = opt.test(current.iv);
+    score(ok);
+    ivBtns.forEach(b => {
+      b.disabled = true;
+      if (b._opt.test(current.iv)) b.classList.add("correct");
+    });
+    if (!ok) btn.classList.add("incorrect");
+    revealPiano();
+    const { iv, rootName, target } = current;
+    let sentence = `${rootName} → ${target.name}, c’est une <strong>${iv.name}</strong>.`;
+    if (settings.mode === "ear") {
+      const twins = INTERVALS.filter(i => i.semis === iv.semis && i !== iv);
+      if (twins.length) sentence += ` <span class="muted">(même son qu’une ${twins.map(t => t.name).join(" / ")})</span>`;
+    }
+    finish(ok, ok ? `Bravo ! ${sentence}` : `Raté. ${sentence}`);
+    playInterval(current);
   }
 
   function renderStats(ok) {
@@ -336,25 +439,27 @@
     }
   }
 
-  // Clic sur le piano : répond (si question en cours) et joue la note
+  // Clic sur le piano : répond (mode note) ou joue simplement la note
+  function pressKey(m) {
+    if (current && !answered && settings.mode === "note") answer(m % 12, m);
+    else { playNote(m, 0, 1.2); pulse(m); }
+  }
   els.piano.addEventListener("pointerdown", e => {
     const k = e.target.closest(".key"); if (!k) return;
-    const m = +k.dataset.midi;
-    if (current && !answered) { answer(m % 12, m); }
-    else { playNote(m, 0, 1.2); pulse(m); }
+    pressKey(+k.dataset.midi);
   });
   els.piano.addEventListener("keydown", e => {
     if (e.key !== "Enter" && e.key !== " ") return;
     const k = e.target.closest(".key"); if (!k) return;
-    e.preventDefault();
-    const m = +k.dataset.midi;
-    if (current && !answered) answer(m % 12, m); else playNote(m, 0, 1.2);
+    e.preventDefault(); pressKey(+k.dataset.midi);
   });
 
   els.next.addEventListener("click", newQuestion);
   els.listen.addEventListener("click", () => {
     if (!current) return;
-    playNote(current.rootMidi, 0, 1.2); pulse(current.rootMidi);
+    if (settings.mode === "note") { playNote(current.rootMidi, 0, 1.2); pulse(current.rootMidi); }
+    else if (settings.mode === "ear" && !answered) playIntervalSilently(current, 0);
+    else playInterval(current, 0);
   });
   document.addEventListener("keydown", e => {
     if (e.key === "Enter" && !els.next.disabled && !e.target.closest("button, input, summary")) { e.preventDefault(); newQuestion(); }
@@ -365,6 +470,7 @@
   /* ------------------------------------------------------------------ */
   renderChips();
   saveSettings();
+  renderModes();
   renderStats();
   newQuestion();
 

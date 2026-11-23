@@ -1,3 +1,5 @@
+[hidden] { display: none !important; }
+
 :root {
   --bg: #0f0d0b;
   --bg-2: #171411;
@@ -73,6 +75,21 @@ main { display: grid; gap: 14px; padding-bottom: 40px; }
   padding: 22px; backdrop-filter: blur(8px);
 }
 
+/* ---------- Modes ---------- */
+.modes {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 18px;
+  background: var(--card); border: 1px solid var(--card-border);
+}
+.modes button {
+  border: 0; background: transparent; border-radius: 14px; padding: 10px 8px; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; transition: background .2s, color .2s;
+}
+.modes b { font-weight: 600; font-size: 14px; }
+.modes small { font-size: 11px; opacity: .75; }
+.modes button:hover { color: var(--text); }
+.modes button[aria-pressed="true"] { background: var(--gold); color: #1d160b; }
+.modes button[aria-pressed="true"] small { opacity: .7; }
+
 /* ---------- Question ---------- */
 .question { text-align: center; padding: 30px 22px 22px; }
 .eyebrow { margin: 0 0 10px; color: var(--faint); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
@@ -85,6 +102,7 @@ main { display: grid; gap: 14px; padding-bottom: 40px; }
   display: inline-block; font-weight: 600; padding: 0 .28em; border-radius: .25em;
   background: var(--gold-soft); color: var(--text);
 }
+.hl-target { display: inline-block; font-weight: 600; padding: 0 .28em; border-radius: .25em; background: var(--teal-soft); }
 .feedback { min-height: 1.5em; margin: 16px 0 0; color: var(--muted); font-size: 15px; transition: color .2s; }
 .feedback.ok { color: var(--teal); }
 .feedback.ko { color: var(--red); }
@@ -170,6 +188,8 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-family: var(--serif); font-size: 19px; font-weight: 600; transition: background .15s, border-color .15s, transform .1s;
 }
+.iv-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.iv-grid .ans { font-size: 16px; line-height: 1.2; padding: 12px 8px; text-align: center; }
 .ans small { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--muted); }
 .ans.blackish { background: rgba(0,0,0,.25); }
 .ans:hover:not(:disabled) { border-color: rgba(227,179,92,.45); background: var(--gold-soft); }
@@ -233,6 +253,10 @@ footer { text-align: center; color: var(--faint); font-size: 12px; padding-botto
   .key .kname { font-size: 8px; }
   .key.root .kname, .key.target .kname, .key.wrong .kname { font-size: 9px; }
   .answer-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .modes b { font-size: 12px; }
+  .modes small { display: none; }
+  .iv-grid { grid-template-columns: repeat(2, 1fr); }
+  .iv-grid .ans { font-size: 15px; }
   .ans { font-size: 17px; min-height: 54px; padding: 10px 4px; }
 }
 
