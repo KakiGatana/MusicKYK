@@ -23,7 +23,14 @@ Les 12 notes chromatiques servent de note de départ. L'orthographe exacte est d
 - Son on/off, question suivante automatique
 - Scores (bonnes réponses, précision, série) sauvegardés dans le navigateur
 
+## Mises à jour
+Quand une nouvelle version est publiée, un bandeau **« Nouvelle version disponible — Actualiser »**
+apparaît (vérification toutes les 5 min et à chaque retour sur l'onglet).
+
+## Sécurité
+Voir [SECURITY.md](SECURITY.md).
+
 ## Lancer
-Aucune installation : ouvrir `index.html` dans un navigateur.
+Aucune installation : ouvrir `index.html` dans un navigateur (le bandeau de mise à jour ne fonctionne qu'une fois en ligne).
 
 Pour la mettre en ligne : GitHub → *Settings* → *Pages* → *Deploy from a branch* → `main` / `(root)`.

@@ -1,5 +1,10 @@
 [hidden] { display: none !important; }
 
+/* Polices hébergées sur le site (aucun appel à un service tiers) — licence OFL, voir fonts/ */
+@font-face { font-family: "Fraunces"; src: url("fonts/fraunces-latin-full-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("fonts/fraunces-latin-full-italic.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("fonts/inter-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+
 :root {
   --bg: #0f0d0b;
   --bg-2: #171411;
@@ -235,6 +240,22 @@ summary small { font-family: var(--sans); font-size: 12px; color: var(--muted); 
 .cheat-grid { padding: 0 22px 22px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .cheat-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,.03); font-size: 14px; }
 .cheat-item b { font-family: var(--serif); color: var(--gold); font-weight: 600; }
+
+/* ---------- Bandeau de mise à jour ---------- */
+.update-bar {
+  position: fixed; z-index: 50; left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: min(560px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; border-radius: 16px;
+  background: #241d14; border: 1px solid rgba(227,179,92,.45); color: var(--text); font-size: 14px;
+  box-shadow: 0 20px 50px -12px rgba(0,0,0,.7); animation: slideup .35s ease;
+}
+.update-bar span { flex: 1; color: var(--muted); }
+.update-bar b { color: var(--text); font-weight: 600; }
+.update-bar button { border: 0; border-radius: 999px; padding: 9px 16px; font-weight: 600; background: var(--gold); color: #1d160b; }
+.update-bar .close { background: transparent; color: var(--muted); padding: 9px 10px; }
+@keyframes slideup { from { opacity: 0; transform: translate(-50%, 20px); } }
+.update-bar small { font-size: inherit; }
+@media (max-width: 640px) { .update-bar small { display: none; } }
 
 footer { text-align: center; color: var(--faint); font-size: 12px; padding-bottom: 30px; }
 

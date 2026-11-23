@@ -61,21 +61,41 @@
    *  Stockage (facultatif)
    * ------------------------------------------------------------------ */
   const store = {
-    get(k, d) { try { const v = localStorage.getItem("kyk:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-    set(k, v) { try { localStorage.setItem("kyk:" + k, JSON.stringify(v)); } catch { /* ignore */ } },
+    get(k, d) { try { const v = localStorage.getItem("musickyk:" + k) ?? localStorage.getItem("kyk:" + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("musickyk:" + k, JSON.stringify(v)); } catch { /* ignore */ } },
   };
 
-  const settings = Object.assign(
-    { intervals: INTERVALS.map(i => i.id), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note" },
-    store.get("settings", {})
-  );
-  const stats = Object.assign({ score: 0, total: 0, streak: 0, best: 0 }, store.get("stats", {}));
+  // Les données du navigateur sont partagées par tous les sites *.github.io du même compte :
+  // on ne leur fait pas confiance et on ne garde que des valeurs connues.
+  const IV_IDS = INTERVALS.map(i => i.id);
+  function loadSettings() {
+    const raw = store.get("settings", {});
+    const s = { intervals: IV_IDS.slice(), roots: ROOTS.map(r => r.pc), sound: true, auto: false, mode: "note" };
+    if (!raw || typeof raw !== "object") return s;
+    if (Array.isArray(raw.intervals)) s.intervals = IV_IDS.filter(id => raw.intervals.includes(id));
+    if (Array.isArray(raw.roots)) s.roots = ROOTS.map(r => r.pc).filter(pc => raw.roots.includes(pc));
+    if (typeof raw.sound === "boolean") s.sound = raw.sound;
+    if (typeof raw.auto === "boolean") s.auto = raw.auto;
+    if (["note", "name", "ear"].includes(raw.mode)) s.mode = raw.mode;
+    return s;
+  }
+  function loadStats() {
+    const raw = store.get("stats", {});
+    const n = v => (Number.isSafeInteger(v) && v >= 0 ? v : 0);
+    const s = { score: n(raw && raw.score), total: n(raw && raw.total), streak: n(raw && raw.streak), best: n(raw && raw.best) };
+    if (s.score > s.total) s.score = s.total;
+    return s;
+  }
+  const settings = loadSettings();
+  const stats = loadStats();
 
   /* ------------------------------------------------------------------ *
    *  Audio (petit synthé type piano)
    * ------------------------------------------------------------------ */
   let ctx = null;
   function audio() {
+    // les navigateurs refusent le son avant une première interaction de l'utilisateur
+    if (!ctx && navigator.userActivation && !navigator.userActivation.hasBeenActive) return null;
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
@@ -474,6 +494,40 @@
   renderStats();
   newQuestion();
 
-  // Exposé pour les tests
-  window.__kyk = { spellInterval, ROOTS, INTERVALS, spell };
+  /* ------------------------------------------------------------------ *
+   *  Détection de nouvelle version → bandeau « Actualiser »
+   *  On compare l'empreinte des fichiers du site au chargement et
+   *  périodiquement (toutes les 5 min et au retour sur l'onglet).
+   * ------------------------------------------------------------------ */
+  const WATCHED = ["index.html", "app.js", "style.css"];
+  const bar = $("#update-bar");
+  let baseline = null, dismissedAt = null, checking = false;
+
+  async function fingerprint() {
+    if (!window.crypto || !crypto.subtle || location.protocol === "file:") return null;
+    const parts = await Promise.all(WATCHED.map(f =>
+      // cache:"reload" va chercher la version en ligne ET met à jour le cache du navigateur,
+      // pour que « Actualiser » charge bien les nouveaux fichiers.
+      fetch(f, { cache: "reload", credentials: "same-origin" }).then(r => (r.ok ? r.text() : Promise.reject(r.status)))));
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(parts.join("\u0000")));
+    return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, "0")).join("");
+  }
+  async function checkUpdate() {
+    if (checking || document.hidden) return;
+    checking = true;
+    try {
+      const fp = await fingerprint();
+      if (!fp) return;
+      if (!baseline) baseline = fp;
+      else if (fp !== baseline && fp !== dismissedAt) bar.hidden = false;
+      if (fp !== baseline) bar.dataset.fp = fp;
+    } catch { /* hors ligne : on réessaiera */ }
+    finally { checking = false; }
+  }
+  $("#btn-update").addEventListener("click", () => location.reload());
+  $("#btn-update-close").addEventListener("click", () => { bar.hidden = true; dismissedAt = bar.dataset.fp || null; });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
+  window.addEventListener("online", checkUpdate);
+  setInterval(checkUpdate, 5 * 60 * 1000);
+  checkUpdate();
 })();
