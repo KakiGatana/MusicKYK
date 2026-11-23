@@ -1,39 +1,30 @@
-# MusicKYK 🎹
+# MusicKYK
 
-Quiz d'intervalles musicaux avec piano interactif.
+Quiz d'intervalles avec un clavier de deux octaves.
 
-> « Quelle est la **tierce mineure** de **Do** ? » → tu choisis la note (boutons ou touches du piano),
-> et le piano colorie la note de départ (or), la bonne réponse (vert) et ton choix s'il est faux (rouge).
-> Les demi‑tons entre les deux sont marqués d'un point, et l'intervalle est joué (mélodique puis harmonique).
+Trois modes :
 
-## 3 modes
-- **Trouver la note** — « Quelle est la tierce mineure de Do ? » → tu choisis la note.
-- **Nommer l'intervalle** — « Quel intervalle entre Do et Mi♭ ? » → tu choisis l'intervalle.
-- **À l'oreille** — deux notes sont jouées, tu devines l'intervalle (les intervalles qui sonnent
-  pareil, comme quarte augmentée / quinte diminuée, sont regroupés).
+1. **Trouver la note** : la tierce mineure de Do ? (réponse : Mi♭)
+2. **Nommer l'intervalle** : de Do à Mi♭, quel intervalle ?
+3. **À l'oreille** : deux notes sont jouées, on choisit l'intervalle. Les intervalles
+   qui sonnent pareil (quarte augmentée et quinte diminuée par exemple) sont sur le même bouton.
 
-Chaque mode marche en **montant**, en **descendant** ou **les deux** (réglage « Sens »).
-Ex. : tierce mineure descendante de Do = **La** ; quinte augmentée descendante de Si = **Mi♭**.
+Chaque mode se joue en montant, en descendant ou les deux.
 
-## Intervalles
-Seconde min/maj · Tierce min/maj · Quarte dim/juste/aug · Quinte dim/juste/aug · Sixte min/maj · Septième min/maj
+Intervalles : secondes, tierces, sixtes et septièmes majeures et mineures ;
+quartes et quintes diminuées, justes et augmentées. Les 12 notes peuvent servir de départ,
+et la réponse est toujours orthographiée correctement (quarte augmentée de Do = Fa♯,
+quinte diminuée de Do = Sol♭).
 
-Les 12 notes chromatiques servent de note de départ. L'orthographe exacte est donnée
-(ex. quarte augmentée de Do = **Fa♯**, quinte diminuée de Do = **Sol♭**).
+## En local
 
-## Réglages
-- Choisir les intervalles et les notes de départ à travailler
-- Son on/off, question suivante automatique
-- Scores (bonnes réponses, précision, série) sauvegardés dans le navigateur
+Ouvrir `index.html` dans un navigateur. Pas de dépendance, pas de build.
 
-## Mises à jour
-Quand une nouvelle version est publiée, un bandeau **« Nouvelle version disponible — Actualiser »**
-apparaît (vérification toutes les 5 min et à chaque retour sur l'onglet).
+## Mise en ligne
 
-## Sécurité
-Voir [SECURITY.md](SECURITY.md).
+GitHub Pages, branche `main`, dossier racine. Quand une nouvelle version est en ligne,
+un bandeau propose d'actualiser la page.
 
-## Lancer
-Aucune installation : ouvrir `index.html` dans un navigateur (le bandeau de mise à jour ne fonctionne qu'une fois en ligne).
+## Police
 
-Pour la mettre en ligne : GitHub → *Settings* → *Pages* → *Deploy from a branch* → `main` / `(root)`.
+Archivo (SIL Open Font License), dans `fonts/`.

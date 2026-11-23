@@ -41,6 +41,8 @@
   ];
 
   const spell = (l, a) => LETTERS[l] + ACC[a];
+  // les altérations passent par une police de symboles (la police du site ne les a pas)
+  const fmt = name => String(name).replace(/[♯♭]+/g, m => `<span class="acc">${m}</span>`);
 
   // dir = 1 (montant) ou -1 (descendant)
   function spellInterval(root, iv, dir = 1) {
@@ -54,8 +56,8 @@
   function tonesText(semis) {
     const t = Math.floor(semis / 2);
     const half = semis % 2 === 1;
-    if (t === 0) return "½ ton";
-    return `${t} ton${t > 1 ? "s" : ""}${half ? " ½" : ""}`;
+    if (t === 0) return "un demi-ton";
+    return `${t} ton${t > 1 ? "s" : ""}${half ? " et demi" : ""}`;
   }
 
   /* ------------------------------------------------------------------ *
@@ -165,6 +167,7 @@
       } else {
         b.className = "key white" + (pc === 0 ? " c" : "");
         wi++;
+        if (m === HIGH) b.classList.add("last");
       }
       keyEls.set(m, b);
       inner.appendChild(b);
@@ -175,7 +178,7 @@
 
   function resetKeyNames() {
     keyEls.forEach((k, m) => {
-      k.querySelector(".kname").textContent = m % 12 === 0 ? `Do${Math.floor(m / 12) - 1}` : "";
+      k.querySelector(".kname").textContent = m % 12 === 0 ? "Do" : "";
     });
   }
 
@@ -186,15 +189,15 @@
     b.type = "button";
     b.className = "ans" + (IS_BLACK[pc] ? " blackish" : "");
     b.dataset.pc = pc;
-    b.innerHTML = PC_LABEL[pc][0] + (PC_LABEL[pc][1] ? `<small>${PC_LABEL[pc][1]}</small>` : "");
+    b.innerHTML = `<span>${fmt(PC_LABEL[pc][0])}</span>` + (PC_LABEL[pc][1] ? `<small>${fmt(PC_LABEL[pc][1])}</small>` : "");
     b.addEventListener("click", () => answer(pc, null));
     ansEls.push(b);
     els.answers.appendChild(b);
   }
 
   // Aide-mémoire
-  els.cheat.innerHTML = INTERVALS.map(iv =>
-    `<div class="cheat-item"><span>${cap(iv.name)}</span><b>${iv.semis} ½t</b></div>`).join("");
+  els.cheat.innerHTML = "<tbody>" + INTERVALS.map(iv =>
+    `<tr><td>${cap(iv.name)}</td><td>${iv.semis}</td></tr>`).join("") + "</tbody>";
 
   /* ------------------------------------------------------------------ *
    *  Réglages
@@ -247,9 +250,9 @@
    *  Modes
    * ------------------------------------------------------------------ */
   const MODES = {
-    note: { listen: "Écouter", hint: "Choisis une note ci‑dessous ou directement sur le piano." },
-    name: { listen: "Écouter", hint: "Quel intervalle sépare ces deux notes ?" },
-    ear:  { listen: "Réécouter", hint: "Écoute les deux notes, puis choisis l’intervalle." },
+    note: { listen: "Écouter", hint: "Réponds avec les cases ou directement sur le clavier." },
+    name: { listen: "Écouter", hint: "" },
+    ear:  { listen: "Réécouter", hint: "" },
   };
   if (!MODES[settings.mode]) settings.mode = "note";
   const modeBtns = document.querySelectorAll("[data-mode]");
@@ -299,13 +302,13 @@
     els.answersIv.innerHTML = "";
     let options;
     if (settings.mode === "ear") {
-      // à l'oreille, les intervalles enharmoniques sonnent pareil : on les regroupe
+      // même nombre de demi-tons = même son : un seul bouton
       const bySemis = new Map();
       ivs.forEach(iv => { if (!bySemis.has(iv.semis)) bySemis.set(iv.semis, []); bySemis.get(iv.semis).push(iv); });
       options = [...bySemis.entries()].sort((a, b) => a[0] - b[0]).map(([semis, list]) => ({
         semis,
         label: list.length > 1 ? list.map(i => cap(i.short)).join(" / ") : cap(list[0].name),
-        sub: list.length > 1 ? "même son" : "",
+        sub: list.length > 1 ? "même son" : `${semis} demi-ton${semis > 1 ? "s" : ""}`,
         test: iv => iv.semis === semis,
       }));
     } else {
@@ -314,7 +317,7 @@
     ivBtns = options.map(o => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "ans";
-      b.innerHTML = o.label + (o.sub ? `<small>${o.sub}</small>` : "");
+      b.innerHTML = `<span>${o.label}</span>` + (o.sub ? `<small>${o.sub}</small>` : "");
       b.addEventListener("click", () => answerInterval(o, b));
       b._opt = o;
       els.answersIv.appendChild(b);
@@ -327,7 +330,7 @@
     const ivs = INTERVALS.filter(i => settings.intervals.includes(i.id));
     const roots = ROOTS.filter(r => settings.roots.includes(r.pc));
     if (!ivs.length || !roots.length) {
-      els.question.innerHTML = "Choisis au moins un intervalle et une note dans les réglages ↓";
+      els.question.textContent = "Aucun intervalle ou aucune note choisis. Voir les réglages plus bas.";
       els.feedback.textContent = ""; els.feedback.className = "feedback";
       ansEls.forEach(b => b.disabled = true);
       els.answersIv.innerHTML = "";
@@ -350,7 +353,7 @@
     answered = false;
     qNum++;
 
-    els.eyebrow.textContent = `Question ${qNum}`;
+    els.eyebrow.textContent = String(qNum).padStart(2, "0");
     els.feedback.className = "feedback";
     els.feedback.textContent = MODES[settings.mode].hint;
     els.semis.innerHTML = "";
@@ -359,35 +362,36 @@
 
     const { rootName } = current;
     if (settings.mode === "note") {
-      els.question.innerHTML = `Quelle est la <span class="hl-int">${current.ivName}</span> ${deOf(rootName)}<span class="hl-root">${rootName}</span> ?`;
+      els.question.innerHTML = `La <span class="int">${current.ivName}</span> ${deOf(rootName)}<span class="nt">${fmt(rootName)}</span> ?`;
       ansEls.forEach(b => { b.disabled = false; b.classList.remove("correct", "incorrect"); });
       mark(current.rootMidi, "root", rootName);
       playNote(current.rootMidi, 0.02, 1.2);
     } else if (settings.mode === "name") {
-      els.question.innerHTML = `Quel intervalle ${dir < 0 ? '<span class="hl-dir">descendant</span> ' : ""}entre <span class="hl-root">${rootName}</span> et <span class="hl-target">${target.name}</span> ?`;
+      els.question.innerHTML = `De <span class="nt">${fmt(rootName)}</span> à <span class="nt t">${fmt(target.name)}</span>${dir < 0 ? " en descendant" : ""}, quel intervalle ?`;
       buildIntervalButtons(ivs);
       mark(current.rootMidi, "root", rootName);
       mark(current.targetMidi, "target", target.name);
       playInterval(current);
     } else {
-      els.question.innerHTML = `Écoute bien… <span class="hl-int">quel est cet intervalle</span> ?`;
+      els.question.innerHTML = `Quel intervalle entends-tu ?`;
       buildIntervalButtons(ivs);
       playIntervalSilently(current, 0.1);
     }
   }
 
   function clearPiano() {
-    keyEls.forEach(k => k.classList.remove("root", "target", "wrong", "between", "pulse"));
+    keyEls.forEach(k => k.classList.remove("root", "target", "wrong", "between", "press"));
     resetKeyNames();
   }
   function mark(midi, cls, label) {
     const k = keyEls.get(midi); if (!k) return;
     k.classList.add(cls);
-    if (label) k.querySelector(".kname").textContent = label;
+    if (label) k.querySelector(".kname").innerHTML = fmt(label);
   }
   function pulse(midi) {
     const k = keyEls.get(midi); if (!k) return;
-    k.classList.remove("pulse"); void k.offsetWidth; k.classList.add("pulse");
+    k.classList.add("press");
+    clearTimeout(k._t); k._t = setTimeout(() => k.classList.remove("press"), 160);
   }
 
   function score(ok) {
@@ -405,7 +409,7 @@
     for (let m = Math.min(rootMidi, targetMidi) + 1; m < Math.max(rootMidi, targetMidi); m++) mark(m, "between");
     mark(rootMidi, "root", rootName);
     mark(targetMidi, "target", target.name);
-    els.semis.innerHTML = `${rootName} ${dir < 0 ? "↘" : "↗"} ${target.name} : <b>${iv.semis} demi‑ton${iv.semis > 1 ? "s" : ""} ${dir < 0 ? "en descendant" : "en montant"}</b> · ${tonesText(iv.semis)}`;
+    els.semis.innerHTML = `${fmt(rootName)} à ${fmt(target.name)}, en ${dir < 0 ? "descendant" : "montant"} : <b>${iv.semis} demi-ton${iv.semis > 1 ? "s" : ""}</b> (${tonesText(iv.semis)})`;
   }
 
   function finish(ok, html) {
@@ -436,9 +440,9 @@
       if (wm !== rootMidi && wm !== targetMidi) mark(wm, "wrong", PC_LABEL[pc][0]);
     }
 
-    const sameKey = PC_LABEL[target.pc].includes(target.name) ? "" : ` <span class="muted">(même touche que ${PC_LABEL[target.pc].join(" / ")})</span>`;
-    const sentence = `La ${current.ivName} ${deOf(rootName)}${rootName}, c’est <strong>${target.name}</strong>${sameKey}.`;
-    finish(ok, ok ? `Bravo ! ${sentence}` : `Raté — tu as choisi ${PC_LABEL[pc].join(" / ")}. ${sentence}`);
+    const sameKey = PC_LABEL[target.pc].includes(target.name) ? "" : ` <span class="soft">Même touche que ${PC_LABEL[target.pc].map(fmt).join(" / ")}.</span>`;
+    const sentence = `${cap(current.ivName)} ${deOf(rootName)}${fmt(rootName)} : <b>${fmt(target.name)}</b>.${sameKey}`;
+    finish(ok, ok ? `<span class="tag">Juste</span>${sentence}` : `<span class="tag">Faux</span>Tu as mis ${PC_LABEL[pc].map(fmt).join(" / ")}. ${sentence}`);
     playInterval(current);
   }
 
@@ -454,12 +458,12 @@
     if (!ok) btn.classList.add("incorrect");
     revealPiano();
     const { iv, rootName, target } = current;
-    let sentence = `${rootName} ${current.dir < 0 ? "↘" : "↗"} ${target.name}, c’est une <strong>${current.ivName}</strong>.`;
+    let sentence = `${fmt(rootName)} à ${fmt(target.name)} : <b>${current.ivName}</b>.`;
     if (settings.mode === "ear") {
       const twins = INTERVALS.filter(i => i.semis === iv.semis && i !== iv);
-      if (twins.length) sentence += ` <span class="muted">(même son qu’une ${twins.map(t => t.name).join(" / ")})</span>`;
+      if (twins.length) sentence += ` <span class="soft">Même son : ${twins.map(t => t.name).join(", ")}.</span>`;
     }
-    finish(ok, ok ? `Bravo ! ${sentence}` : `Raté. ${sentence}`);
+    finish(ok, ok ? `<span class="tag">Juste</span>${sentence}` : `<span class="tag">Faux</span>${sentence}`);
     playInterval(current);
   }
 
@@ -467,11 +471,8 @@
     els.score.textContent = stats.score;
     els.acc.textContent = stats.total ? Math.round(100 * stats.score / stats.total) + "%" : "–";
     els.streak.textContent = stats.streak;
-    els.streak.parentElement.title = `Meilleure série : ${stats.best}`;
-    if (ok) {
-      const s = els.streak.parentElement;
-      s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump");
-    }
+    els.streak.title = `Record : ${stats.best}`;
+    if (ok) { els.streak.classList.remove("hit"); void els.streak.offsetWidth; els.streak.classList.add("hit"); }
   }
 
   // Clic sur le piano : répond (mode note) ou joue simplement la note
